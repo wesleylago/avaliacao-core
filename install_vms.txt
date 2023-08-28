@@ -1,0 +1,93 @@
+Itens da Avaliacao
+
+Itens
+instalaco do VirtualBox 7.0.10 r158379
+
+1 . Criacao de 3 VMs CentOS 
+1.1 Instalacao CentOS 7.9 root/123456
+
+Atualizacao do S.O e instalacao dos pacotes vim vim-scripts vim-common e htop
+
+1.2 Particionamento usando LVM para / e /tmp 
+/dev/mapper/maya-root  4,5G  1,5G  2,8G  35% /
+/dev/sda1              488M  120M  333M  27% /boot
+/dev/mapper/maya-tmp   1,9G  5,7M  1,7G   1% /tmp
+Swap          				 1906
+
+1.3 Rede 
+Renomeando interfaces de rede ens para eth 
+
+Adicionando IP 192.168.51.11/27 na VM01
+Adicionando IP 192.168.51.12/27 na VM02
+Adicionando IP 192.168.51.13/27 na VM03
+
+Adicionando segunda interface(eth1) com Bridge 
+
+1.4 Usuarios / grupos ssh (nas 3 vms)
+Criado grupo remote 
+adicionado usuarios maya e core
+Adicionado usuarios root e maya no grupo remote 
+
+Alterando configuracoes do SSH(sshd_config) para aceitar root e grupo remoto
+# Grupos Autorizados
+AllowGroups remoto
+Match Group remoto User *
+    PasswordAuthentication yes
+    AllowTcpForwarding yes
+
+
+1.5 FailOver “unicast” (NÃO multicast):
+Instalção do keepalived usando yum
+yum install -y keepalived
+
+Adicionando configuracao no arquivo sysctl.conf para permitir IP flutuante.
+echo "net.ipv4.ip_nonlocal_bind = 1" >> /etc/sysctl.conf
+
+Configuracao do keepalived.conf abaixo, mudando apenas a propriedade state MASTER e state BACKUP da VM01(master) para as demais(vm02 e vm03)BACKUP
+! Configuration File for keepalived
+
+global_defs {
+   notification_email {
+  root@vm01.avaliacaocore.maya.local
+   }
+   notification_email_from root@vm01.avaliacaocore.maya.local
+   smtp_server 127.0.0.1
+   smtp_connect_timeout 30
+   router_id LVS_DEVEL
+}
+
+vrrp_instance VI_1 {
+    state MASTER
+    interface eth0
+    virtual_router_id 51
+    priority 101 #used in election, 101 for master & 100 for backup
+    advert_int 1
+    authentication {
+        auth_type PASS
+        auth_pass 1111
+    }
+    virtual_ipaddress {
+        192.168.51.10/32
+    }
+}
+
+1.6 - Nginx via YUM (nas 3 vms)
+Instalacao do pacote epel
+yum install -y epel-release
+yum install -y nginx
+systemctl start nginx 
+systemctl enable nginx 
+Criacao do diretorio com arquivo index.html
+Configuracao do novo website (/etc/nginx/conf.d/avaliacao.conf)
+Verificando se criou arquivos de log(sim)
+Ajuste no logrote para 45 dias.
+
+1.7 - Haproxy via SOURCE (tar.gz) (nas 3 vms)
+Foi necessário a instalacao de pacotes dependentes
+yum install -y gcc pcre-devel tar make
+Tive que refazer a instalação do pacote haproxy com as opções de SSL.
+Logs configurados(Tive certa dificuldade com os logs)
+
+
+
+
